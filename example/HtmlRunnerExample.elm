@@ -49,6 +49,7 @@ actualFuzzTest =
 main : Program Never
 main =
     [ testOxfordify
+    , noDescription
     , testAssertions
     , testFailingFuzzTests
     , actualFuzzTest
@@ -100,6 +101,16 @@ string : Fuzzer String
 string =
     Fuzzer (Random.choice "foo" "bar")
         Shrink.string
+
+
+noDescription : Test
+noDescription =
+    test ""
+        <| \_ ->
+            { expected = "No description"
+            , actual = "Whatsoever!"
+            }
+                |> Assert.equal
 
 
 testFuzz : Test

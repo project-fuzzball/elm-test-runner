@@ -35,10 +35,10 @@ type Msg
 
 
 viewFailures : String -> List String -> List (Html a)
-viewFailures message context =
+viewFailures message labels =
     let
-        ( maybeLastContext, otherContexts ) =
-            case List.reverse context of
+        ( maybeLastLabel, otherLabels ) =
+            case labels of
                 [] ->
                     ( Nothing, [] )
 
@@ -46,7 +46,7 @@ viewFailures message context =
                     ( Just first, List.reverse rest )
 
         viewMessage message =
-            case maybeLastContext of
+            case maybeLastLabel of
                 Just lastContext ->
                     div []
                         [ withColorChar '✗' "hsla(3, 100%, 40%, 1.0)" lastContext
@@ -57,11 +57,16 @@ viewFailures message context =
                     pre [] [ text message ]
 
         viewContext =
-            otherContexts
+            otherLabels
                 |> List.map (withColorChar '↓' "darkgray")
                 |> div []
     in
         [ viewContext ] ++ [ viewMessage message ]
+
+
+withoutEmptyStrings : List String -> List String
+withoutEmptyStrings =
+    List.filter ((/=) "")
 
 
 withColorChar : Char -> String -> String -> Html a
@@ -119,7 +124,7 @@ viewOutcome : List String -> Assertion -> List (Html a)
 viewOutcome descriptions assertion =
     case Assert.getFailure assertion of
         Just failure ->
-            [ li [ style [ ( "margin", "40px 0" ) ] ] (viewFailures failure descriptions) ]
+            [ li [ style [ ( "margin", "40px 0" ) ] ] ((withoutEmptyStrings >> viewFailures failure) descriptions) ]
 
         Nothing ->
             []
