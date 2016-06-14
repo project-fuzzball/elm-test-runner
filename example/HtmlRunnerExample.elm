@@ -118,14 +118,14 @@ testFuzz =
                 , actual = oxfordify "This sentence contains " "." [ "one item" ]
                 }
                     |> Assert.equal
-        , Test.fuzz2 string string "custom onFail here"
+        , fuzz2 string string "custom onFail here"
             <| \name punctuation ->
                 { expected = "This sentence contains one item and two item."
                 , actual = oxfordify "This sentence contains " "." [ "one item", "two item" ]
                 }
                     |> Assert.equal
                     |> Assert.onFail "given an empty list, did not return an empty string"
-        , Test.fuzz2 string string "This is a test."
+        , fuzz2 string string "This is a test."
             <| \name punctuation ->
                 { expected = "This sentence contains one item, two item, and three item."
                 , actual = oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
