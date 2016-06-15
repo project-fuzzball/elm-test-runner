@@ -17,19 +17,19 @@ import Time exposing (Time)
 
 
 type Msg subMsg
-    = Init (Maybe Random.Seed)
+    = Init (Maybe Time)
     | SubMsg subMsg
 
 
 type Model subMsg subModel
-    = Uninitialized (SubUpdate subMsg subModel) Int Test (List (() -> ( List String, List Assertion )) -> ( subModel, Cmd subMsg ))
+    = Uninitialized (SubUpdate subMsg subModel) (Maybe Random.Seed) Int Test (Time -> List (() -> ( List String, List Assertion )) -> ( subModel, Cmd subMsg ))
     | Initialized (SubUpdate subMsg subModel) subModel
 
 
 getInitialSeed : Cmd (Msg a)
 getInitialSeed =
     Time.now
-        |> Task.perform fromNever (\time -> Init (Just (timeToSeed time)))
+        |> Task.perform fromNever (\time -> Init (Just time))
 
 
 timeToSeed : Time -> Random.Seed
@@ -47,18 +47,26 @@ fromNever a =
 initOrUpdate : Msg subMsg -> Model subMsg subModel -> ( Model subMsg subModel, Cmd (Msg subMsg) )
 initOrUpdate msg maybeModel =
     case maybeModel of
-        Uninitialized update runs test init ->
+        Uninitialized update seed runs test init ->
             case msg of
                 Init Nothing ->
-                    ( Uninitialized update runs test init, getInitialSeed )
+                    ( Uninitialized update seed runs test init, getInitialSeed )
 
-                Init (Just seed) ->
+                Init (Just time) ->
                     let
+                        finalSeed =
+                            case seed of
+                                Just realSeed ->
+                                    realSeed
+
+                                Nothing ->
+                                    timeToSeed time
+
                         ( subModel, subCmd ) =
                             test
-                                |> Test.Runner.fromTest runs seed
+                                |> Test.Runner.fromTest runs finalSeed
                                 |> toThunks
-                                |> init
+                                |> init time
                     in
                         ( Initialized update subModel, Cmd.map SubMsg subCmd )
 
@@ -87,7 +95,7 @@ initCmd =
 initOrView : (subModel -> Html subMsg) -> Model subMsg subModel -> Html (Msg subMsg)
 initOrView view model =
     case model of
-        Uninitialized _ _ _ _ ->
+        Uninitialized _ _ _ _ _ ->
             text ""
 
         Initialized _ subModel ->
@@ -105,7 +113,7 @@ type alias RunnerOptions =
 
 
 type alias AppOptions msg model =
-    { init : List (() -> ( List String, List Assertion )) -> ( model, Cmd msg )
+    { init : Time -> List (() -> ( List String, List Assertion )) -> ( model, Cmd msg )
     , update : SubUpdate msg model
     , view : model -> Html msg
     , subscriptions : model -> Sub msg
@@ -115,7 +123,7 @@ type alias AppOptions msg model =
 subscriptions : (subModel -> Sub subMsg) -> Model subMsg subModel -> Sub (Msg subMsg)
 subscriptions subs model =
     case model of
-        Uninitialized _ _ _ _ ->
+        Uninitialized _ _ _ _ _ ->
             Sub.none
 
         Initialized _ subModel ->
@@ -149,19 +157,7 @@ run runnerOpts appOpts test =
             Maybe.withDefault defaultRunCount runnerOpts.runs
 
         init =
-            case runnerOpts.seed of
-                Just seed ->
-                    let
-                        ( subModel, subCmd ) =
-                            test
-                                |> Test.Runner.fromTest runs seed
-                                |> toThunks
-                                |> appOpts.init
-                    in
-                        ( Initialized appOpts.update subModel, Cmd.map SubMsg subCmd )
-
-                Nothing ->
-                    ( Uninitialized appOpts.update runs test appOpts.init, initCmd )
+            ( Uninitialized appOpts.update runnerOpts.seed runs test appOpts.init, initCmd )
     in
         Html.App.program
             { init = init

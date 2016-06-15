@@ -16,6 +16,7 @@ import Set exposing (Set)
 import Test.Runner.Html.App
 import String
 import Random.Pcg as Random
+import Time exposing (Time)
 
 
 type alias TestId =
@@ -27,11 +28,14 @@ type alias Model =
     , running : Set TestId
     , queue : List TestId
     , completed : List ( List String, List Assertion )
+    , startTime : Time
+    , finishTime : Maybe Time
     }
 
 
 type Msg
     = Dispatch
+    | Finish Time
 
 
 viewFailures : String -> List String -> List (Html a)
@@ -82,42 +86,53 @@ view model =
             Dict.isEmpty model.available && Set.isEmpty model.running
 
         summary =
-            if isFinished then
-                let
-                    ( headlineColor, headlineText ) =
-                        if List.isEmpty failures then
-                            ( "darkgreen", "Test Run Passed" )
-                        else
-                            ( "hsla(3, 100%, 40%, 1.0)", "Test Run Failed" )
+            case model.finishTime of
+                Just finishTime ->
+                    let
+                        ( headlineColor, headlineText ) =
+                            if List.isEmpty failures then
+                                ( "darkgreen", "Test Run Passed" )
+                            else
+                                ( "hsla(3, 100%, 40%, 1.0)", "Test Run Failed" )
 
-                    thStyle =
-                        [ ( "text-align", "left" ), ( "padding-right", "10px" ) ]
-                in
-                    div []
-                        [ h2 [ style [ ( "color", headlineColor ) ] ] [ text headlineText ]
-                        , table []
-                            [ tbody []
-                                [ tr []
-                                    [ th [ style thStyle ]
-                                        [ text "Passed" ]
-                                    , td []
-                                        [ text (toString completedCount) ]
-                                    ]
-                                , tr []
-                                    [ th [ style thStyle ]
-                                        [ text "Failed" ]
-                                    , td []
-                                        [ text (toString (List.length failures)) ]
+                        thStyle =
+                            [ ( "text-align", "left" ), ( "padding-right", "10px" ) ]
+
+                        duration =
+                            formatDuration (finishTime - model.startTime)
+                    in
+                        div []
+                            [ h2 [ style [ ( "color", headlineColor ) ] ] [ text headlineText ]
+                            , table []
+                                [ tbody []
+                                    [ tr []
+                                        [ th [ style thStyle ]
+                                            [ text "Duration" ]
+                                        , td []
+                                            [ text duration ]
+                                        ]
+                                    , tr []
+                                        [ th [ style thStyle ]
+                                            [ text "Passed" ]
+                                        , td []
+                                            [ text (toString completedCount) ]
+                                        ]
+                                    , tr []
+                                        [ th [ style thStyle ]
+                                            [ text "Failed" ]
+                                        , td []
+                                            [ text (toString (List.length failures)) ]
+                                        ]
                                     ]
                                 ]
                             ]
+
+                Nothing ->
+                    div []
+                        [ h2 [] [ text "Running Tests..." ]
+                        , div [] [ text (toString completedCount ++ " completed") ]
+                        , div [] [ text (toString remainingCount ++ " remaining") ]
                         ]
-            else
-                div []
-                    [ h2 [] [ text "Running Tests..." ]
-                    , div [] [ text (toString completedCount ++ " completed") ]
-                    , div [] [ text (toString remainingCount ++ " remaining") ]
-                    ]
 
         completedCount =
             List.length model.completed
@@ -133,6 +148,11 @@ view model =
             [ summary
             , ol [ class "results", style [ ( "font-family", "monospace" ) ] ] (viewContextualOutcomes failures)
             ]
+
+
+fromNever : Never -> a
+fromNever a =
+    fromNever a
 
 
 viewContextualOutcomes : List ( List String, List Assertion ) -> List (Html a)
@@ -167,11 +187,19 @@ warn str result =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        Finish time ->
+            case model.finishTime of
+                Nothing ->
+                    ( { model | finishTime = Just time }, Cmd.none )
+
+                Just _ ->
+                    ( model, Cmd.none )
+                        |> warn "Attempted to Finish more than once!"
+
         Dispatch ->
             case model.queue of
                 [] ->
-                    ( model, Cmd.none )
-                        |> warn "Attempted to Dispatch when all tests completed!"
+                    ( model, Task.perform fromNever Finish Time.now )
 
                 testId :: newQueue ->
                     case Dict.get testId model.available of
@@ -207,8 +235,8 @@ dispatch =
         |> Task.perform identity identity
 
 
-init : List (() -> ( List String, List Assertion )) -> ( Model, Cmd Msg )
-init thunks =
+init : Time -> List (() -> ( List String, List Assertion )) -> ( Model, Cmd Msg )
+init startTime thunks =
     let
         indexedThunks : List ( TestId, () -> ( List String, List Assertion ) )
         indexedThunks =
@@ -219,9 +247,17 @@ init thunks =
             , running = Set.empty
             , queue = List.map fst indexedThunks
             , completed = []
+            , startTime = startTime
+            , finishTime = Nothing
             }
     in
         ( model, dispatch )
+
+
+formatDuration : Time -> String
+formatDuration time =
+    -- TODO make this human-readable
+    toString time ++ " ms"
 
 
 {-| TODO documentation
