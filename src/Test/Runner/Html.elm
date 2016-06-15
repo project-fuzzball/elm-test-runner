@@ -83,10 +83,35 @@ view model =
 
         summary =
             if isFinished then
-                if List.isEmpty failures then
-                    h2 [ style [ ( "color", "darkgreen" ) ] ] [ text "All Tests passed!" ]
-                else
-                    h2 [ style [ ( "color", "hsla(3, 100%, 40%, 1.0)" ) ] ] [ text (toString (List.length failures) ++ " of " ++ toString completedCount ++ " Tests Failed:") ]
+                let
+                    ( headlineColor, headlineText ) =
+                        if List.isEmpty failures then
+                            ( "darkgreen", "Test Run Passed" )
+                        else
+                            ( "hsla(3, 100%, 40%, 1.0)", "Test Run Failed" )
+
+                    thStyle =
+                        [ ( "text-align", "left" ), ( "padding-right", "10px" ) ]
+                in
+                    div []
+                        [ h2 [ style [ ( "color", headlineColor ) ] ] [ text headlineText ]
+                        , table []
+                            [ tbody []
+                                [ tr []
+                                    [ th [ style thStyle ]
+                                        [ text "Passed" ]
+                                    , td []
+                                        [ text (toString completedCount) ]
+                                    ]
+                                , tr []
+                                    [ th [ style thStyle ]
+                                        [ text "Failed" ]
+                                    , td []
+                                        [ text (toString (List.length failures)) ]
+                                    ]
+                                ]
+                            ]
+                        ]
             else
                 div []
                     [ h2 [] [ text "Running Tests..." ]
@@ -209,10 +234,10 @@ run =
 {-| TODO documentation
 -}
 runWithOptions : Maybe Int -> Maybe Random.Seed -> Test -> Program Never
-runWithOptions runs maybeSeed =
+runWithOptions runs seed =
     Test.Runner.Html.App.run
         { runs = runs
-        , seed = maybeSeed
+        , seed = seed
         }
         { init = init
         , update = update
