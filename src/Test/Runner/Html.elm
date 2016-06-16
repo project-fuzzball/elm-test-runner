@@ -1,6 +1,9 @@
 module Test.Runner.Html exposing (run, runWithOptions)
 
-{-| HTML test runner.
+{-| HTML Runner
+
+Runs tests in a browser and reports the results in the DOM. You can bring up
+one of these tests in elm-reactor to have it run and show outputs.
 
 @docs run, runWithOptions
 
@@ -82,9 +85,6 @@ withColorChar char textColor str =
 view : Model -> Html Msg
 view model =
     let
-        isFinished =
-            Dict.isEmpty model.available && Set.isEmpty model.running
-
         summary =
             case model.finishTime of
                 Just finishTime ->
@@ -150,9 +150,9 @@ view model =
             ]
 
 
-fromNever : Never -> a
-fromNever a =
-    fromNever a
+never : Never -> a
+never a =
+    never a
 
 
 viewContextualOutcomes : List ( List String, List Assertion ) -> List (Html a)
@@ -199,7 +199,7 @@ update msg model =
         Dispatch ->
             case model.queue of
                 [] ->
-                    ( model, Task.perform fromNever Finish Time.now )
+                    ( model, Task.perform never Finish Time.now )
 
                 testId :: newQueue ->
                     case Dict.get testId model.available of
@@ -256,18 +256,21 @@ init startTime thunks =
 
 formatDuration : Time -> String
 formatDuration time =
-    -- TODO make this human-readable
     toString time ++ " ms"
 
 
-{-| TODO documentation
+{-| Run the test and report the results.
+
+Fuzz tests use a default run count of 100, and an initial seed based on the
+system time when the test runs begin.
 -}
 run : Test -> Program Never
 run =
     runWithOptions Nothing Nothing
 
 
-{-| TODO documentation
+{-| Run the test using the provided options. If `Nothing` is provided for either
+`runs` or `seed`, it will fall back on the options used in [`run`](#run).
 -}
 runWithOptions : Maybe Int -> Maybe Random.Seed -> Test -> Program Never
 runWithOptions runs seed =
