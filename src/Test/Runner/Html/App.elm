@@ -17,19 +17,13 @@ import Time exposing (Time)
 
 
 type Msg subMsg
-    = Init (Maybe Time)
+    = Init Time
     | SubMsg subMsg
 
 
 type Model subMsg subModel
     = Uninitialized (SubUpdate subMsg subModel) (Maybe Random.Seed) Int Test (Time -> List (() -> ( List String, List Assertion )) -> ( subModel, Cmd subMsg ))
     | Initialized (SubUpdate subMsg subModel) subModel
-
-
-getInitialSeed : Cmd (Msg a)
-getInitialSeed =
-    Time.now
-        |> Task.perform fromNever (\time -> Init (Just time))
 
 
 timeToSeed : Time -> Random.Seed
@@ -49,10 +43,7 @@ initOrUpdate msg maybeModel =
     case maybeModel of
         Uninitialized update seed runs test init ->
             case msg of
-                Init Nothing ->
-                    ( Uninitialized update seed runs test init, getInitialSeed )
-
-                Init (Just time) ->
+                Init time ->
                     let
                         finalSeed =
                             case seed of
@@ -84,12 +75,6 @@ initOrUpdate msg maybeModel =
 
                 Init _ ->
                     Debug.crash "Attempted to init twice!"
-
-
-initCmd : Cmd (Msg a)
-initCmd =
-    Task.succeed (Init Nothing)
-        |> Task.perform identity identity
 
 
 initOrView : (subModel -> Html subMsg) -> Model subMsg subModel -> Html (Msg subMsg)
@@ -156,8 +141,11 @@ run runnerOpts appOpts test =
         runs =
             Maybe.withDefault defaultRunCount runnerOpts.runs
 
+        cmd =
+            Task.perform fromNever Init Time.now
+
         init =
-            ( Uninitialized appOpts.update runnerOpts.seed runs test appOpts.init, initCmd )
+            ( Uninitialized appOpts.update runnerOpts.seed runs test appOpts.init, cmd )
     in
         Html.App.program
             { init = init
