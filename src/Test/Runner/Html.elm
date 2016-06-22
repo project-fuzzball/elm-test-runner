@@ -1,11 +1,11 @@
-module Test.Runner.Html exposing (run, runWithOptions)
+module HtmlRunner exposing (run, runSync, runWithOptions)
 
 {-| HTML Runner
 
 Runs tests in a browser and reports the results in the DOM. You can bring up
 one of these tests in elm-reactor to have it run and show outputs.
 
-@docs run, runWithOptions
+@docs run, runSync, runWithOptions
 
 -}
 
@@ -235,23 +235,34 @@ dispatch =
         |> Task.perform identity identity
 
 
-init : Time -> List (() -> ( List String, List Assertion )) -> ( Model, Cmd Msg )
-init startTime thunks =
-    let
-        indexedThunks : List ( TestId, () -> ( List String, List Assertion ) )
-        indexedThunks =
-            List.indexedMap (,) thunks
+init : Bool -> Time -> List (() -> ( List String, List Assertion )) -> ( Model, Cmd Msg )
+init sync startTime thunks =
+    if sync then
+        ( { available = Dict.empty
+          , running = Set.empty
+          , queue = []
+          , completed = List.map ((|>) ()) thunks
+          , startTime = startTime
+          , finishTime = Nothing
+          }
+        , Task.perform never Finish Time.now
+        )
+    else
+        let
+            indexedThunks : List ( TestId, () -> ( List String, List Assertion ) )
+            indexedThunks =
+                List.indexedMap (,) thunks
 
-        model =
-            { available = Dict.fromList indexedThunks
-            , running = Set.empty
-            , queue = List.map fst indexedThunks
-            , completed = []
-            , startTime = startTime
-            , finishTime = Nothing
-            }
-    in
-        ( model, dispatch )
+            model =
+                { available = Dict.fromList indexedThunks
+                , running = Set.empty
+                , queue = List.map fst indexedThunks
+                , completed = []
+                , startTime = startTime
+                , finishTime = Nothing
+                }
+        in
+            ( model, dispatch )
 
 
 formatDuration : Time -> String
@@ -266,19 +277,33 @@ system time when the test runs begin.
 -}
 run : Test -> Program Never
 run =
-    runWithOptions Nothing Nothing
+    runWithOptions Nothing Nothing False
+
+
+{-| Run the test synchronously and report the results. Since running tests
+synchronously does not pause to update the UI in between runs, the tests will
+complete sooner, but will not provide any feedback until the entire run is over.
+
+If you'd like feedback along the way, use [`run`](#run) instead.
+
+Fuzz tests use a default run count of 100, and an initial seed based on the
+system time when the test runs begin.
+-}
+runSync : Test -> Program Never
+runSync =
+    runWithOptions Nothing Nothing True
 
 
 {-| Run the test using the provided options. If `Nothing` is provided for either
 `runs` or `seed`, it will fall back on the options used in [`run`](#run).
 -}
-runWithOptions : Maybe Int -> Maybe Random.Seed -> Test -> Program Never
-runWithOptions runs seed =
+runWithOptions : Maybe Int -> Maybe Random.Seed -> Bool -> Test -> Program Never
+runWithOptions runs seed sync =
     Test.Runner.Html.App.run
         { runs = runs
         , seed = seed
         }
-        { init = init
+        { init = init sync
         , update = update
         , view = view
         , subscriptions = \_ -> Sub.none
