@@ -8,7 +8,7 @@ module Test.Runner.Html.App exposing (run)
 
 import Test exposing (Test)
 import Test.Runner exposing (Runner(..))
-import Assert exposing (Assertion)
+import Expect exposing (Expectation)
 import Html exposing (Html, text)
 import Html.App
 import Task
@@ -22,7 +22,7 @@ type Msg subMsg
 
 
 type Model subMsg subModel
-    = Uninitialized (SubUpdate subMsg subModel) (Maybe Random.Seed) Int Test (Time -> List (() -> ( List String, List Assertion )) -> ( subModel, Cmd subMsg ))
+    = Uninitialized (SubUpdate subMsg subModel) (Maybe Random.Seed) Int Test (Time -> List (() -> ( List String, List Expectation )) -> ( subModel, Cmd subMsg ))
     | Initialized (SubUpdate subMsg subModel) subModel
 
 
@@ -98,7 +98,7 @@ type alias RunnerOptions =
 
 
 type alias AppOptions msg model =
-    { init : Time -> List (() -> ( List String, List Assertion )) -> ( model, Cmd msg )
+    { init : Time -> List (() -> ( List String, List Expectation )) -> ( model, Cmd msg )
     , update : SubUpdate msg model
     , view : model -> Html msg
     , subscriptions : model -> Sub msg
@@ -115,12 +115,12 @@ subscriptions subs model =
             Sub.map SubMsg (subs subModel)
 
 
-toThunks : Runner -> List (() -> ( List String, List Assertion ))
+toThunks : Runner -> List (() -> ( List String, List Expectation ))
 toThunks =
     toThunksHelp []
 
 
-toThunksHelp : List String -> Runner -> List (() -> ( List String, List Assertion ))
+toThunksHelp : List String -> Runner -> List (() -> ( List String, List Expectation ))
 toThunksHelp labels runner =
     case runner of
         Runnable runnable ->

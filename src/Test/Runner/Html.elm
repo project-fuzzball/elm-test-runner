@@ -10,7 +10,7 @@ one of these tests in elm-reactor to have it run and show outputs.
 -}
 
 import Test exposing (Test)
-import Assert exposing (Assertion)
+import Expect exposing (Expectation)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Dict exposing (Dict)
@@ -27,10 +27,10 @@ type alias TestId =
 
 
 type alias Model =
-    { available : Dict TestId (() -> ( List String, List Assertion ))
+    { available : Dict TestId (() -> ( List String, List Expectation ))
     , running : Set TestId
     , queue : List TestId
-    , completed : List ( List String, List Assertion )
+    , completed : List ( List String, List Expectation )
     , startTime : Time
     , finishTime : Maybe Time
     }
@@ -140,14 +140,19 @@ view model =
         remainingCount =
             List.length (Dict.keys model.available)
 
-        failures : List ( List String, List Assertion )
+        failures : List ( List String, List Expectation )
         failures =
-            List.filter (snd >> List.all ((/=) Assert.pass)) model.completed
+            List.filter (snd >> List.all ((/=) Expect.pass)) model.completed
     in
         div [ style [ ( "width", "960px" ), ( "margin", "auto 40px" ), ( "font-family", "verdana, sans-serif" ) ] ]
             [ summary
-            , ol [ class "results", style [ ( "font-family", "monospace" ) ] ] (viewContextualOutcomes failures)
+            , ol [ class "results", style resultsStyle ] (viewContextualOutcomes failures)
             ]
+
+
+resultsStyle : List ( String, String )
+resultsStyle =
+    [ ( "font-size", "14px" ), ( "line-height", "14px" ), ( "font-family", "Menlo, Consolas, \"Fira Mono\", \"DejaVu Sans Mono\", \"Liberation Monospace\", \"Liberation Mono\", Monaco, \"Lucida Console\", \"Courier New\", monospace" ) ]
 
 
 never : Never -> a
@@ -155,19 +160,19 @@ never a =
     never a
 
 
-viewContextualOutcomes : List ( List String, List Assertion ) -> List (Html a)
+viewContextualOutcomes : List ( List String, List Expectation ) -> List (Html a)
 viewContextualOutcomes =
     List.concatMap viewOutcomes
 
 
-viewOutcomes : ( List String, List Assertion ) -> List (Html a)
-viewOutcomes ( descriptions, assertions ) =
-    List.concatMap (viewOutcome descriptions) assertions
+viewOutcomes : ( List String, List Expectation ) -> List (Html a)
+viewOutcomes ( descriptions, expectations ) =
+    List.concatMap (viewOutcome descriptions) expectations
 
 
-viewOutcome : List String -> Assertion -> List (Html a)
-viewOutcome descriptions assertion =
-    case Assert.getFailure assertion of
+viewOutcome : List String -> Expectation -> List (Html a)
+viewOutcome descriptions expectation =
+    case Expect.getFailure expectation of
         Just failure ->
             [ li [ style [ ( "margin", "40px 0" ) ] ] ((withoutEmptyStrings >> viewFailures failure) descriptions) ]
 
@@ -235,10 +240,10 @@ dispatch =
         |> Task.perform identity identity
 
 
-init : Time -> List (() -> ( List String, List Assertion )) -> ( Model, Cmd Msg )
+init : Time -> List (() -> ( List String, List Expectation )) -> ( Model, Cmd Msg )
 init startTime thunks =
     let
-        indexedThunks : List ( TestId, () -> ( List String, List Assertion ) )
+        indexedThunks : List ( TestId, () -> ( List String, List Expectation ) )
         indexedThunks =
             List.indexedMap (,) thunks
 
