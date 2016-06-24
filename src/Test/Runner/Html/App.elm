@@ -124,7 +124,7 @@ toThunksHelp : List String -> Runner -> List (() -> ( List String, List Expectat
 toThunksHelp labels runner =
     case runner of
         Runnable runnable ->
-            [ \_ -> ( labels, Test.Runner.run runnable ) ]
+            [ \() -> ( labels, Test.Runner.run runnable ) ]
 
         Labeled label subRunner ->
             toThunksHelp (label :: labels) subRunner

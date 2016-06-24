@@ -62,15 +62,15 @@ testExpectations : Test
 testExpectations =
     describe "basic expectations"
         [ test "this should succeed" <|
-            \_ ->
+            \() ->
                 "blah"
                     |> Expect.equal " blah"
         , test "this should fail" <|
-            \_ ->
+            \() ->
                 "something"
                     |> Expect.equal "someting else"
         , test "another failure" <|
-            \_ ->
+            \() ->
                 "forty-two"
                     |> Expect.equal "forty-three"
         ]
@@ -98,7 +98,7 @@ string =
 noDescription : Test
 noDescription =
     test "" <|
-        \_ ->
+        \() ->
             Expect.equal "No description" "Whatsoever!"
 
 
@@ -142,23 +142,23 @@ testOxfordify =
     describe "oxfordify"
         [ describe "given an empty sentence"
             [ test "returns an empty string" <|
-                \_ ->
+                \() ->
                     oxfordify "This sentence is empty" "." []
                         |> Expect.equal ""
             ]
         , describe "given a sentence with one item"
             [ test "still contains one item" <|
-                \_ ->
+                \() ->
                     oxfordify "This sentence contains " "." [ "one item" ]
                         |> Expect.equal "This sentence contains one item."
             ]
         , describe "given a sentence with multiple items"
             [ test "returns an oxford-style sentence" <|
-                \_ ->
+                \() ->
                     oxfordify "This sentence contains " "." [ "one item", "two item" ]
                         |> Expect.equal "This sentence contains one item and two item."
             , test "returns an oxford-style sentence" <|
-                \_ ->
+                \() ->
                     oxfordify "This sentence contains " "." [ "one item", "two item", "three item" ]
                         |> Expect.equal "This sentence contains one item, two item, and three item."
             ]
