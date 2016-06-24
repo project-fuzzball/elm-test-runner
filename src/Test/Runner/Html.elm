@@ -57,7 +57,7 @@ viewFailures message labels =
                 Just lastContext ->
                     div []
                         [ withColorChar '✗' "hsla(3, 100%, 40%, 1.0)" lastContext
-                        , pre [] [ text message ]
+                        , pre [ width 80 ] [ text message ]
                         ]
 
                 Nothing ->
