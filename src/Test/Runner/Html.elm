@@ -57,11 +57,11 @@ viewFailures message labels =
                 Just lastContext ->
                     div []
                         [ withColorChar '✗' "hsla(3, 100%, 40%, 1.0)" lastContext
-                        , pre [ width 80 ] [ text message ]
+                        , pre preAttributes [ text message ]
                         ]
 
                 Nothing ->
-                    pre [] [ text message ]
+                    pre preAttributes [ text message ]
 
         viewContext =
             otherLabels
@@ -69,6 +69,17 @@ viewFailures message labels =
                 |> div []
     in
         [ viewContext ] ++ [ viewMessage message ]
+
+
+preAttributes : List (Html.Attribute a)
+preAttributes =
+    [ width 80
+    , style
+        [ ( "margin-left", "32px" )
+        , ( "font-size", "inherit" )
+        , ( "font-family", "inherit" )
+        ]
+    ]
 
 
 withoutEmptyStrings : List String -> List String
@@ -146,13 +157,13 @@ view model =
     in
         div [ style [ ( "width", "960px" ), ( "margin", "auto 40px" ), ( "font-family", "verdana, sans-serif" ) ] ]
             [ summary
-            , ol [ class "results", style resultsStyle ] (viewContextualOutcomes failures)
+            , ol [ class "results", resultsStyle ] (viewContextualOutcomes failures)
             ]
 
 
-resultsStyle : List ( String, String )
+resultsStyle : Html.Attribute a
 resultsStyle =
-    [ ( "font-size", "14px" ), ( "line-height", "14px" ), ( "font-family", "Menlo, Consolas, \"Fira Mono\", \"DejaVu Sans Mono\", \"Liberation Monospace\", \"Liberation Mono\", Monaco, \"Lucida Console\", \"Courier New\", monospace" ) ]
+    style [ ( "font-size", "14px" ), ( "line-height", "1.3" ), ( "font-family", "Menlo, Consolas, \"Fira Mono\", \"DejaVu Sans Mono\", \"Liberation Monospace\", \"Liberation Mono\", Monaco, \"Lucida Console\", \"Courier New\", monospace" ) ]
 
 
 never : Never -> a
