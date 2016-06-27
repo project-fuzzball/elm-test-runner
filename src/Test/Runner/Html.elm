@@ -41,34 +41,17 @@ type Msg
     | Finish Time
 
 
-viewFailures : String -> List String -> List (Html a)
-viewFailures message labels =
-    let
-        ( maybeLastLabel, otherLabels ) =
-            case labels of
-                [] ->
-                    ( Nothing, [] )
+viewLabels : List String -> List (Html a)
+viewLabels labels =
+    case List.filter (not << String.isEmpty) labels of
+        [] ->
+            []
 
-                first :: rest ->
-                    ( Just first, List.reverse rest )
-
-        viewMessage message =
-            case maybeLastLabel of
-                Just lastContext ->
-                    div []
-                        [ withColorChar '✗' "hsla(3, 100%, 40%, 1.0)" lastContext
-                        , pre preAttributes [ text message ]
-                        ]
-
-                Nothing ->
-                    pre preAttributes [ text message ]
-
-        viewContext =
-            otherLabels
+        first :: rest ->
+            rest
                 |> List.map (withColorChar '↓' "darkgray")
-                |> div []
-    in
-        [ viewContext ] ++ [ viewMessage message ]
+                |> (::) (withColorChar '✗' "hsla(3, 100%, 40%, 1.0)" first)
+                |> List.reverse
 
 
 preAttributes : List (Html.Attribute a)
@@ -76,6 +59,7 @@ preAttributes =
     [ width 80
     , style
         [ ( "margin-left", "32px" )
+        , ( "margin-bottom", "40px" )
         , ( "font-size", "inherit" )
         , ( "font-family", "inherit" )
         ]
@@ -157,7 +141,7 @@ view model =
     in
         div [ style [ ( "width", "960px" ), ( "margin", "auto 40px" ), ( "font-family", "verdana, sans-serif" ) ] ]
             [ summary
-            , ol [ class "results", resultsStyle ] (viewContextualOutcomes failures)
+            , ol [ class "results", resultsStyle ] (List.map viewFailures failures)
             ]
 
 
@@ -171,24 +155,20 @@ never a =
     never a
 
 
-viewContextualOutcomes : List ( List String, List Expectation ) -> List (Html a)
-viewContextualOutcomes =
-    List.concatMap viewOutcomes
+viewFailures : ( List String, List Expectation ) -> Html a
+viewFailures ( labels, failures ) =
+    li [ style [ ( "margin", "40px 0" ) ] ]
+        (viewLabels labels ++ (List.filterMap viewFailure failures))
 
 
-viewOutcomes : ( List String, List Expectation ) -> List (Html a)
-viewOutcomes ( descriptions, expectations ) =
-    List.concatMap (viewOutcome descriptions) expectations
-
-
-viewOutcome : List String -> Expectation -> List (Html a)
-viewOutcome descriptions expectation =
+viewFailure : Expectation -> Maybe (Html a)
+viewFailure expectation =
     case Expect.getFailure expectation of
         Just failure ->
-            [ li [ style [ ( "margin", "40px 0" ) ] ] ((withoutEmptyStrings >> viewFailures failure) descriptions) ]
+            Just (pre preAttributes [ text failure ])
 
         Nothing ->
-            []
+            Nothing
 
 
 warn : String -> a -> a
