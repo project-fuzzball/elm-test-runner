@@ -153,7 +153,7 @@ view model =
 
         failures : List ( List String, List Expectation )
         failures =
-            List.filter (snd >> List.all ((/=) Expect.pass)) model.completed
+            List.filter (snd >> List.any ((/=) Expect.pass)) model.completed
     in
         div [ style [ ( "width", "960px" ), ( "margin", "auto 40px" ), ( "font-family", "verdana, sans-serif" ) ] ]
             [ summary
