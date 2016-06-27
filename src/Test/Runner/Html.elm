@@ -10,6 +10,7 @@ one of these tests in elm-reactor to have it run and show outputs.
 -}
 
 import Test exposing (Test)
+import Test.Runner exposing (formatLabels)
 import Expect exposing (Expectation)
 import Html exposing (..)
 import Html.Attributes exposing (..)
@@ -42,16 +43,9 @@ type Msg
 
 
 viewLabels : List String -> List (Html a)
-viewLabels labels =
-    case List.filter (not << String.isEmpty) labels of
-        [] ->
-            []
-
-        first :: rest ->
-            rest
-                |> List.map (withColorChar '↓' "darkgray")
-                |> (::) (withColorChar '✗' "hsla(3, 100%, 40%, 1.0)" first)
-                |> List.reverse
+viewLabels =
+    formatLabels (withColorChar '↓' "darkgray")
+        (withColorChar '✗' "hsla(3, 100%, 40%, 1.0)")
 
 
 preAttributes : List (Html.Attribute a)
