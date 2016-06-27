@@ -126,7 +126,7 @@ view model =
                                         [ th [ style thStyle ]
                                             [ text "Passed" ]
                                         , td []
-                                            [ text (toString completedCount) ]
+                                            [ text (toString (completedCount - List.length failures)) ]
                                         ]
                                     , tr []
                                         [ th [ style thStyle ]
