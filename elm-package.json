@@ -1,5 +1,5 @@
 {
-    "version": "1.0.4",
+    "version": "1.0.5",
     "summary": "Run elm-test tests.",
     "repository": "https://github.com/project-fuzzball/test-runner.git",
     "license": "BSD-3-Clause",
