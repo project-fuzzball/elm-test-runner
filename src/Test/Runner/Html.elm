@@ -48,8 +48,20 @@ viewLabels =
         (withColorChar '✗' "hsla(3, 100%, 40%, 1.0)")
 
 
-preAttributes : List (Html.Attribute a)
-preAttributes =
+givenAttributes : List (Html.Attribute a)
+givenAttributes =
+    [ width 80
+    , style
+        [ ( "margin-bottom", "24px" )
+        , ( "color", "darkgray" )
+        , ( "font-size", "inherit" )
+        , ( "font-family", "inherit" )
+        ]
+    ]
+
+
+messageAttributes : List (Html.Attribute a)
+messageAttributes =
     [ width 80
     , style
         [ ( "margin-left", "32px" )
@@ -158,8 +170,19 @@ viewFailures ( labels, failures ) =
 viewFailure : Expectation -> Maybe (Html a)
 viewFailure expectation =
     case Expect.getFailure expectation of
-        Just failure ->
-            Just (pre preAttributes [ text failure ])
+        Just { given, message } ->
+            let
+                givenElem =
+                    if String.isEmpty given then
+                        text ""
+                    else
+                        pre givenAttributes [ text ("Given " ++ given) ]
+            in
+                div []
+                    [ givenElem
+                    , pre messageAttributes [ text message ]
+                    ]
+                    |> Just
 
         Nothing ->
             Nothing
