@@ -133,7 +133,7 @@ toThunksHelp labels runner =
             List.concatMap (toThunksHelp labels) runners
 
 
-{-| TODO document
+{-| Run the tests and render the results as a Web page.
 -}
 run : RunnerOptions -> AppOptions msg model -> Test -> Program Never
 run runnerOpts appOpts test =
