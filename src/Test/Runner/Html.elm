@@ -19,7 +19,7 @@ import Task
 import Set exposing (Set)
 import Test.Runner.Html.App
 import String
-import Random.Pcg as Random
+import Random
 import Time exposing (Time)
 
 

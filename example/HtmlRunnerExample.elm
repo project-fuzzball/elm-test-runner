@@ -13,7 +13,7 @@ import Test exposing (..)
 import Test.Runner.Html
 import Fuzz exposing (..)
 import Char
-import Random.Pcg as Random
+import Random
 import Shrink
 
 
